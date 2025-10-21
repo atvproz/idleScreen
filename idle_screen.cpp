@@ -1,3 +1,5 @@
+#define UNICODE
+#define _UNICODE
 #include <windows.h>
 #include <iostream>
 #include <chrono>
@@ -25,33 +27,24 @@ DWORD idleScreentime ()
 {    
     LASTINPUTINFO lastInput;
     lastInput.cbSize = sizeof(LASTINPUTINFO);
-    if (!GetLastInputInfo(&lastInput)) 
-    {
-        std::cout << "Failed to get last input time: " << GetLastError() << std::endl;
-    }
-    else
-    {
-        std::cout << "Last input time (ms): " << lastInput.dwTime << std::endl;
-    }
-
     DWORD currentTime = GetTickCount();
     DWORD idleTime = currentTime - lastInput.dwTime;
 
-    return idleTime / 1000; // Return idle time in seconds
+    return idleTime/1000;
 }
 
 // Function to create and show black screen
 void ShowBlackScreen()
 {
     // Register window class
-    WNDCLASS wc = {};
+    WNDCLASSW wc = {};
     wc.lpfnWndProc = WindowProc;
     wc.hInstance = GetModuleHandle(NULL);
     wc.lpszClassName = L"BlackScreen";
-    RegisterClass(&wc);
+    RegisterClassW(&wc);
 
     // Create full screen black window
-    HWND hwnd = CreateWindowEx(
+    HWND hwnd = CreateWindowExW(
         WS_EX_TOPMOST,
         L"BlackScreen",
         L"Black Screen",
@@ -73,37 +66,33 @@ void ShowBlackScreen()
     RegisterRawInputDevices(&rid, 1, sizeof(rid));
 
     // Show window and set black background
-    SetClassLongPtr(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)CreateSolidBrush(RGB(0, 0, 0)));
+    SetClassLongPtrW(hwnd, GCLP_HBRBACKGROUND, (LONG_PTR)CreateSolidBrush(RGB(0, 0, 0)));
     ShowWindow(hwnd, SW_SHOW);
 
     // Message loop
     MSG msg = {};
-    while (GetMessage(&msg, NULL, 0, 0))
+    while (GetMessageW(&msg, NULL, 0, 0))
     {
         TranslateMessage(&msg);
-        DispatchMessage(&msg);
+        DispatchMessageW(&msg);
     }
 }
 
 int main ()
 {
     const DWORD idleLimit = 20;
-    bool isBlackScreenActive = false;
-
+    
     while (true)
     {
         DWORD idleTime = idleScreentime();
-        if (idleTime >= idleLimit && !isBlackScreenActive)
-        {
-            isBlackScreenActive = true;
-            ShowBlackScreen();
-            isBlackScreenActive = false;
-        }
-        else
-        {
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-        }
+        bool isActive = false;
 
+        if (idleTime >= idleLimit && !isActive)
+        {
+            isActive = true;
+            ShowBlackScreen();
+            isActive = false;
+        }
     }
     return 0;
 }
